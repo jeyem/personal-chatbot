@@ -1,0 +1,22 @@
+version: '3'
+
+services:
+  postgres:
+    container_name: 'chatbot-pg'
+    image: 'pgvector/pgvector:pg16'
+    environment:
+      POSTGRES_USER: 'chatbot'
+      POSTGRES_PASSWORD: 'passwd'
+      POSTGRES_DB: 'chatbot'
+      PGDATA: '/data/postgres'
+    volumes:
+      - '../chatbot:/data/postgres'
+    expose:
+      - '5432'
+    ports:
+      - '5432:5432'
+    restart: 'always'
+
+networks:
+  default:
+    driver: bridge

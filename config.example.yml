@@ -1,0 +1,27 @@
+
+debug: true
+env: development
+
+app:
+  host: "localhost"
+  port: 8000
+
+database:
+  host: localhost
+  user: chatbot
+  port: 5432
+  password: "passwd"
+  name: chatbot
+
+embeddings:
+  model: "sentence-transformers/all-MiniLM-L6-v2"
+  dimensions: 384
+  chunk_size: 200
+  chunk_overlap: 30
+  top_k: 3
+
+llm:
+  provider: "ollama"
+  model: "gemma4"
+  base_url: "http://localhost:11434"
+  timeout: 120
