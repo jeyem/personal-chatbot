@@ -17,7 +17,7 @@ class ChatRequest(BaseModel):
 
 
 class MessageOut(BaseModel):
-    role: str
+    role: MessageRole
     content: str
 
 
