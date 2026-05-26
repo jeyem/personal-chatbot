@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
+import argparse
 import os
 import subprocess
-import argparse
 from pathlib import Path
 
 parser = argparse.ArgumentParser(prog="migrate.py")

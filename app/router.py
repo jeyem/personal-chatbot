@@ -1,10 +1,10 @@
 from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel
 
-from app.state import get_config
 from app.db import get_session
 from app.middlewares import _is_rate_limited
 from app.models import Chat, Chunk, Message, MessageRole
+from app.state import get_config
 from services.embed import embed
 from services.llm import ask
 
@@ -12,12 +12,12 @@ router = APIRouter(prefix="/chat", tags=["chat"])
 
 
 class ChatRequest(BaseModel):
-    message:   str
+    message: str
     user_hash: str
 
 
 class MessageOut(BaseModel):
-    role:    str
+    role: str
     content: str
 
 
@@ -44,7 +44,6 @@ async def chat(req: ChatRequest):
         raise HTTPException(status_code=400, detail="Invalid user hash.")
 
     with get_session() as session:
-        
         chat_obj = Chat.get_chat_by_user(session, req.user_hash)
 
         limited, reason = _is_rate_limited(f"hash:{req.user_hash}")
@@ -59,9 +58,9 @@ async def chat(req: ChatRequest):
         session.add(user_msg)
         session.flush()
 
-        history        = chat_obj.recent_messages(limit=10)
+        history = chat_obj.recent_messages(limit=10)
         query_embedding = embed(req.message)
-        chunks         = Chunk.search(session, query_embedding, top_k=cfg.EMBEDDINGS.top_k)
+        chunks = Chunk.search(session, query_embedding, top_k=cfg.EMBEDDINGS.top_k)
         chunk_contents = [c.content for c in chunks]
 
         answer = await ask(chunk_contents, history, req.message)

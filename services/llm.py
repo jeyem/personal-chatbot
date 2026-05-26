@@ -1,14 +1,12 @@
 import httpx
-from app.state import get_config
+
 from app.models import Message
+from app.state import get_config
 
 
 def build_prompt(context_chunks: list[str], history: list[Message], question: str) -> str:
-    context      = "\n\n---\n\n".join(context_chunks)
-    history_text = "\n".join(
-        f"{m.role.value.capitalize()}: {m.content}"
-        for m in reversed(history)
-    )
+    context = "\n\n---\n\n".join(context_chunks)
+    history_text = "\n".join(f"{m.role.value.capitalize()}: {m.content}" for m in reversed(history))
 
     return (
         f"You are Ehsan, a software engineer. Answer as yourself in first person.\n"
@@ -32,8 +30,13 @@ async def _ask_ollama(prompt: str) -> str:
     cfg = get_config()
     async with httpx.AsyncClient() as client:
         response = await client.post(
-            f"{cfg.LLM.base_url}/api/generate", # pyright: ignore[reportOptionalMemberAccess]
-            json={"model": cfg.LLM.model, "prompt": prompt, "stream": False, "keep_alive": -1},
+            f"{cfg.LLM.base_url}/api/generate",  # pyright: ignore[reportOptionalMemberAccess]
+            json={
+                "model": cfg.LLM.model,
+                "prompt": prompt,
+                "stream": False,
+                "keep_alive": -1,
+            },
             timeout=cfg.LLM.timeout,
         )
     return response.json()["response"].strip()
@@ -45,7 +48,10 @@ async def _ask_huggingface(prompt: str) -> str:
         response = await client.post(
             f"{cfg.LLM.base_url}/models/{cfg.LLM.model}",
             headers={"Authorization": f"Bearer {cfg.LLM.api_token}"},
-            json={"inputs": prompt, "parameters": {"max_new_tokens": cfg.LLM.max_new_tokens}},
+            json={
+                "inputs": prompt,
+                "parameters": {"max_new_tokens": cfg.LLM.max_new_tokens},
+            },
             timeout=cfg.LLM.timeout,
         )
     result = response.json()
@@ -53,8 +59,8 @@ async def _ask_huggingface(prompt: str) -> str:
 
 
 _PROVIDERS = {
-    "ollama":       _ask_ollama,
-    "huggingface":  _ask_huggingface,
+    "ollama": _ask_ollama,
+    "huggingface": _ask_huggingface,
 }
 
 
@@ -64,7 +70,7 @@ async def ask(context_chunks: list[str], history: list[Message], question: str) 
         raise ValueError("LLM configuration is missing or incomplete. Cannot call any provider.")
 
     provider = cfg.LLM.provider
-    handler  = _PROVIDERS.get(provider)
+    handler = _PROVIDERS.get(provider)
     if handler is None:
         raise ValueError(f"Unknown LLM provider '{provider}'. choices: {list(_PROVIDERS)}")
 

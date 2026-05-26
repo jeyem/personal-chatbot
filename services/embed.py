@@ -1,8 +1,6 @@
-from app.state import get_embedder
 from app.db import get_session
 from app.models import Chunk
-
-
+from app.state import get_embedder
 
 
 def embed(text: str) -> list[float]:

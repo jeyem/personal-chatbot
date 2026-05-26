@@ -1,38 +1,39 @@
+import json
 import time
 from collections import defaultdict
+
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
 
-
 # ── in-memory counters ────────────────────────────────────
 # structure: { key: {"minute": [timestamps], "day": [timestamps]} }
-_counters: dict[str, dict[str, list[float]]] = defaultdict(
-    lambda: {"minute": [], "day": []}
-)
+_counters: dict[str, dict[str, list[float]]] = defaultdict(lambda: {"minute": [], "day": []})
 
 LIMIT_PER_MINUTE = 5
-LIMIT_PER_DAY    = 100
+LIMIT_PER_DAY = 100
 
 REQUIRED_HEADERS = {"user-agent", "accept", "accept-language"}
-BLOCKED_AGENTS   = {"curl", "python-requests", "httpie", "wget"}
+BLOCKED_AGENTS = {"curl", "python-requests", "httpie", "wget"}
 
 
-def _identify(request: Request) -> str | None:
+async def _identify(request: Request) -> str | None:
     """Return identifier string or None if cant identify."""
-    ip        = request.client.host if request.client else None
-    user_hash = None
-
-    # try to extract user_hash from body — cached by starlette after first read
-    # we rely on it being set in request.state by the route, so here we use IP only
-    # user_hash is checked in the route itself for chat-level identity
-    return ip
+    try:
+        body = await request.body()
+        if body:
+            payload = json.loads(body)
+            if user_id := payload.get("user_id"):
+                return f"user:{user_id}"
+    except (json.JSONDecodeError, UnicodeDecodeError):
+        pass
+    return request.client.host if request.client else None
 
 
 def _is_browser(request: Request) -> bool:
     """Rough browser fingerprint check via headers."""
-    headers     = {k.lower() for k in request.headers.keys()}
-    user_agent  = request.headers.get("user-agent", "").lower()
+    headers = {k.lower() for k in request.headers.keys()}
+    user_agent = request.headers.get("user-agent", "").lower()
 
     # must have basic browser headers
     if not REQUIRED_HEADERS.issubset(headers):
@@ -50,12 +51,12 @@ def _is_browser(request: Request) -> bool:
 
 
 def _is_rate_limited(key: str) -> tuple[bool, str]:
-    now     = time.time()
+    now = time.time()
     counter = _counters[key]
 
     # clean old timestamps
     counter["minute"] = [t for t in counter["minute"] if now - t < 60]
-    counter["day"]    = [t for t in counter["day"]    if now - t < 86400]
+    counter["day"] = [t for t in counter["day"] if now - t < 86400]
 
     if len(counter["minute"]) >= LIMIT_PER_MINUTE:
         return True, "Too many requests — slow down."
@@ -82,7 +83,7 @@ class ProtectionMiddleware(BaseHTTPMiddleware):
             )
 
         # rate limit by IP
-        ip = _identify(request)
+        ip = await _identify(request)
         if ip:
             limited, reason = _is_rate_limited(f"ip:{ip}")
             if limited:
