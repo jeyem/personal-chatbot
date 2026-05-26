@@ -10,14 +10,14 @@ def init_app(cfg: Config):
     init_db(cfg.DATABASE_URL)
     
     app = FastAPI(title=cfg.ENV, debug=cfg.DEBUG)
-
+    print(f"Environment: {cfg}")
     if not cfg.DEBUG:
         from .middlewares import ProtectionMiddleware
         app.add_middleware(ProtectionMiddleware)
 
     app.add_middleware(
         CORSMiddleware,
-        allow_origins=cfg.APP.orgins,
+        allow_origins=cfg.APP.origins,
         allow_credentials=True,
         allow_methods=["*"],
         allow_headers=["*"],

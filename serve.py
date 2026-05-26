@@ -19,7 +19,7 @@ parser.add_argument("-c", "--config", default=Path(__file__).parent / "config.ym
 
 args = parser.parse_args()
 
-cfg = Config(args.config)
+cfg = Config()
 
 app = init_app(cfg)
 
