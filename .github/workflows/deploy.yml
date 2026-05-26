@@ -47,14 +47,24 @@ jobs:
           key:      ${{ secrets.SERVER_SSH_KEY }}
           script: |
             echo ${{ secrets.GITHUB_TOKEN }} | docker login ghcr.io -u ${{ github.actor }} --password-stdin
+
             docker pull ghcr.io/${{ github.repository }}:latest
+
+            docker run --rm \
+              --env-file /etc/personal-chatbot/env \
+              -v /etc/personal-chatbot/config.yml:/app/config.yml \
+              ghcr.io/${{ github.repository }}:latest \
+              python migrate.py upgrade
+
             docker stop personal-chatbot || true
             docker rm   personal-chatbot || true
+
             docker run -d \
               --name personal-chatbot \
               --restart always \
               -p 8000:8000 \
-              --env-file /etc/personal-chatbot/.env \
+              --env-file /etc/personal-chatbot/env \
               -v /etc/personal-chatbot/config.yml:/app/config.yml \
               ghcr.io/${{ github.repository }}:latest
+
             docker image prune -f

@@ -2,3 +2,4 @@ venv/
 config.yml
 .env
 *.pyc
+.ruff_cache/
