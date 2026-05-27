@@ -1,5 +1,5 @@
 import httpx
-
+from huggingface_hub import InferenceClient
 from app.models import Message
 from app.state import get_config
 
@@ -43,19 +43,16 @@ async def _ask_ollama(prompt: str) -> str:
 
 
 async def _ask_huggingface(prompt: str) -> str:
-    cfg = get_config()
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            f"{cfg.LLM.base_url}/models/{cfg.LLM.model}",
-            headers={"Authorization": f"Bearer {cfg.LLM.api_token}"},
-            json={
-                "inputs": prompt,
-                "parameters": {"max_new_tokens": cfg.LLM.max_new_tokens},
-            },
-            timeout=cfg.LLM.timeout,
-        )
-    result = response.json()
-    return result[0].get("generated_text", "").replace(prompt, "").strip()
+    cfg    = get_config()
+    client = InferenceClient(api_key=cfg.LLM.api_token)
+    result = client.chat.completions.create(
+        model    = cfg.LLM.model,
+        messages = [{"role": "user", "content": prompt}],
+        max_tokens = cfg.LLM.max_new_tokens,
+    )
+    if result.choices[0].message.content is not None:
+        return result.choices[0].message.content.strip()
+    return ""
 
 
 _PROVIDERS = {
