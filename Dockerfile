@@ -8,12 +8,13 @@ RUN apt-get update && apt-get install -y \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-RUN echo "numpy==1.26.4" > /constraints.txt
-# install numpy first with no binary to build from source for this CPU
+# build numpy from source for this CPU before anything else
 RUN pip install --no-cache-dir "numpy==1.26.4" --no-binary numpy
 
 COPY requirements.txt .
-RUN pip install --no-cache-dir --no-binary numpy -c /constraints.txt -r requirements.txt
+
+# install rest of requirements — numpy already installed won't be reinstalled
+RUN pip install --no-cache-dir -r requirements.txt --no-deps numpy
 
 RUN python -c "from sentence_transformers import SentenceTransformer; SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')"
 
